@@ -1,0 +1,1 @@
+{"text": " Hello world, how are you?", "segments": [{"id": 0, "seek": 0, "start": 0.0, "end": 3.0, "text": " Hello world, how are you?", "tokens": [50364, 2425, 1002, 11, 577, 366, 291, 30, 50514], "temperature": 0.0, "avg_logprob": -0.5847211837768554, "compression_ratio": 0.7575757575757576, "no_speech_prob": 0.10929092764854431}], "language": "English"}
