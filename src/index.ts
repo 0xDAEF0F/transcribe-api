@@ -1,5 +1,18 @@
 import { Hono } from "hono";
+import { z } from "zod";
 
+// Schemas
+export const LangSchema = z
+  .string()
+  .transform((val) => {
+    let lower = val.toLowerCase();
+    return lower.charAt(0).toUpperCase() + lower.slice(1);
+  })
+  .pipe(z.enum(["English", "Spanish"]));
+
+export const ModelSchema = z.enum(["tiny", "base", "small"]);
+
+// App
 const app = new Hono();
 
 app.get("/", (c) => {
@@ -11,15 +24,20 @@ app.post("/upload-wav", async (c) => {
     const arrayBuffer = await c.req.arrayBuffer();
     const bytes = new Uint8Array(arrayBuffer);
 
-    const language = c.req.query("language") || "English";
+    let lang = c.req.query("lang") || "English";
+    let model = c.req.query("model") || "base";
+
+    lang = LangSchema.parse(lang);
+    model = ModelSchema.parse(model);
 
     console.log(`Received WAV file of: ${bytes.length} bytes`);
-    console.log(`Using language: ${language}`);
+    console.log(`Using language: ${lang}`);
+    console.log(`Using model: ${model}`);
 
     await Bun.write("test.wav", bytes);
 
     const langFlags =
-      language === "Spanish"
+      lang === "Spanish"
         ? ["--language", "Spanish", "--task", "translate"]
         : ["--language", "English", "--task", "transcribe"];
 
@@ -27,7 +45,7 @@ app.post("/upload-wav", async (c) => {
       "whisper",
       "test.wav",
       "--model",
-      "base",
+      model,
       "--output_format",
       "json",
       ...langFlags,
