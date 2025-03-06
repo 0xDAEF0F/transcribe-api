@@ -41,8 +41,9 @@ app.post("/upload-wav", async (c) => {
         ? ["--language", "Spanish", "--task", "translate"]
         : ["--language", "English", "--task", "transcribe"];
 
+    // TODO: Make this path configurable
     const { stdout } = Bun.spawnSync([
-      "whisper",
+      "/home/alex/ai-proj/bin/whisper",
       "test.wav",
       "--model",
       model,
