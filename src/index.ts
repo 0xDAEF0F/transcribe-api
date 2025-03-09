@@ -1,5 +1,37 @@
 import { Hono } from "hono";
 import { z } from "zod";
+import OpenAI from "openai";
+
+const systemPrompt = `
+You are an expert text transcription assistant designed to correct errors in text while preserving
+the original meaning and intent. Your sole purpose is to receive text that may contain gramatical
+errors and produce a corrected version.
+
+## Context About the Text Creator
+- Is a computer science engineer.
+- His development environment is macOS/Linux.
+
+## Your Responsibilities:
+1. Correct spelling errors and grammatical mistakes
+2. Fix sentence structure maintaining the original meaning
+3. The author prefers lowercaps to seem more casual
+4. Maintain technical terminology accuracy based on the context provided
+
+## What *NOT* to Do:
+1. Do not add new information or expand on ideas
+3. Do not remove content unless it's clearly redundant
+4. Do not alter specialized terminology unless incorrectly used
+5. Do not comment on the quality of the writing
+6. Do *not* ever try to answer the text's original question. That is not your task.
+
+## Output Format:
+Provide *only* the corrected text without explanations, remarks or comments.
+`;
+
+const openai = new OpenAI({
+  baseURL: "https://api.deepseek.com",
+  apiKey: process.env.DEEPSEEK_API_KEY,
+});
 
 // Schemas
 export const LangSchema = z
@@ -58,9 +90,25 @@ app.post("/upload-wav", async (c) => {
 
     const result = await Bun.file("test.json").json();
 
+    const response = await openai.chat.completions.create({
+      model: "deepseek-chat",
+      messages: [
+        {
+          role: "system",
+          content: systemPrompt,
+        },
+        {
+          role: "user",
+          content: `Please correct the following text: \"${result.text}\"`,
+        },
+      ],
+    });
+
+    const text = `whisper: ${result.text}\ndeepseek: ${response.choices[0].message.content}`;
+
     return c.json({
       success: true,
-      text: result.text,
+      text,
     });
   } catch (error) {
     console.error("Error processing WAV file:", error);
